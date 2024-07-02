@@ -1,0 +1,8 @@
+convem @ git+ssh://git@github.com/converseon/ConvEM.git@v0.6.0
+convolve @ git+ssh://git@github.com/converseon/convolve.git@v0.6.0
+onnx==1.16.1
+onnxoptimizer==0.3.13
+pandas
+torch==2.3.0
+torchmetrics
+transformers==4.41.1
