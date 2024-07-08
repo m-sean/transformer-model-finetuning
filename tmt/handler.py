@@ -142,7 +142,7 @@ class TransformerModelHandler:
         optimizer: OptimizerConfig,
         loss: torch.nn.Module,
         norm_clip: Optional[float] = None,
-        scaler: Optional[GradScaler] = None,
+        scaler: bool = False,
         save_top: int = 1,
         test: DataLoader | None = None,
         dropout: float = 0.0,
@@ -168,6 +168,8 @@ class TransformerModelHandler:
         save_history = []
         best_result = float("-inf")
         ignore_metrics = save_top == epochs
+        if scaler:
+            scaler = GradScaler(device=self.device)
         for ep in range(1, epochs + 1):
             with tqdm(total=batch_ct, unit="batch") as pbar:
                 pbar.set_description(f"Epoch {ep}")
@@ -189,6 +191,7 @@ class TransformerModelHandler:
 
             if ignore_metrics:
                 model.save(save, f"e{ep}")
+                save_history.append(ep)
                 continue
 
             if (epoch_metric := v_metrics.get(metric_key)) and epoch_metric > best_result:
@@ -200,6 +203,7 @@ class TransformerModelHandler:
                     os.remove(f"{save}/model_e{ckpt}.pt")
         if test:
             model = model_cls.load(save, f"e{save_history[-1]}")
+            model.to(self.device)
             batch_ct = len(test)
             with tqdm(total=batch_ct, unit="batch") as pbar:
                 eval_metrics = self._val_step(
@@ -272,7 +276,7 @@ class TransformerModelHandler:
             sum_metrics["loss"] += batch_loss
             results = {metric: value / n for metric, value in sum_metrics.items()}
             pbar.update()
-            pbar.set_postfix_str(" ".join(f"{met}={val:.3f}" for met, val in results))
+            pbar.set_postfix_str(" ".join(f"{met}={val:.3f}" for met, val in results.items()))
         return results
 
     def _val_step(
@@ -303,7 +307,7 @@ class TransformerModelHandler:
             processor = partial(processor, activation=self.activation_fn)
         loss, metrics = processor(
             torch.stack(all_outputs), 
-            torch.tensor(all_targets), 
+            torch.tensor(all_targets, device=self.device), 
             loss_fn,
             expanded_metrics=expanded_metrics,
         )

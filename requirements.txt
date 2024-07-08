@@ -4,5 +4,6 @@ onnx==1.16.1
 onnxoptimizer==0.3.13
 pandas
 torch==2.3.0
+torcheval
 torchmetrics
 transformers==4.41.1

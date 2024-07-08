@@ -1,4 +1,5 @@
 import argparse
+import os
 from configparser import ConfigParser
 
 from tmt.optimizer import OptimizerConfig
@@ -62,6 +63,10 @@ def main(args: argparse.Namespace) -> None:
         optimizer.set_decay(decay)
     if amsgrad := config.getboolean("training", "amsgrad"):
         optimizer.set_amsgrad(amsgrad)
+
+    save_dir = config["model"]["save_dir"]
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
     
     epochs = config.getint("training", "epochs")
     model_trainer.train(
@@ -69,7 +74,7 @@ def main(args: argparse.Namespace) -> None:
         val_loader,
         test=test_loader,
         epochs=epochs,
-        save=config["model"]["save_dir"],
+        save=save_dir,
         optimizer=optimizer,
         norm_clip=config.getfloat("training", "norm_clip", fallback=None),
         loss=config["training"]["loss"],
@@ -77,7 +82,6 @@ def main(args: argparse.Namespace) -> None:
         scaler=config.getboolean("training", "half_precision"),
         dropout=config.getfloat("training", "dropout", fallback=0.0)
     )
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
